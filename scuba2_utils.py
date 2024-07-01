@@ -250,4 +250,169 @@ def extract_sources(proj_name, hdr, im_arg, ns_arg, snr_arg, psf, wcs_copy, thre
    
     return source_list
     
+def get_scuba2_prior(coords, s2_name, im, ns, snr, wcsi, band='850'):
+
+    if band == '450':
+        snr_thresh = 3.5
+        stack_thresh = 4.0
+        r_min = 3.75
+        r_psf = 30 
+        sz_psf = 80 
+        ns_factor = 4.5 
+    else:
+        snr_thresh = 3.5
+        stack_thresh = 4.0
+        r_min = 7.25
+        r_psf = 50 
+        sz_psf = 70
+        ns_factor = 4.5 
+
+
+    psf = create_psf(s2_name, im, ns, snr, stack_thresh, ns_factor, sz_psf)
+
+    center=int(psf.shape[0]/2.0)
+    print(center,psf.shape)
+    psf=psf[int(center-r_psf) : int(center+r_psf+1), int(center-r_psf) : int(center+r_psf+1)]
+
+    imresid = im.copy()
+    snrresid = snr.copy()
+
+    xo,yo = np.round(wcsi.world_to_pixel(coords),0).astype(int)
+
+    mask = ~((xo<0)|(xo>=im.shape[1])|(yo<0)|(yo>=im.shape[0]))
+
+    s2flux= np.zeros(len(coords))
+    s2err= np.zeros(len(coords))
+    s2snr= np.zeros(len(coords))
+
+    s2flux[mask] = im[yo[mask],xo[mask]].copy()
+    s2err[mask] = ns[yo[mask],xo[mask]].copy()
+    s2snr[mask] = snr[yo[mask],xo[mask]].copy()
+    s2flux[~mask] = np.nan
+    s2err[~mask] = np.nan
+    s2snr[~mask] = np.nan
+
+    ra = np.array([])
+    dec = np.array([])
+    x = np.array([])
+    y = np.array([])
+    err_out = np.array([])
+    flux_out = np.array([])
+    snr_out = np.array([])
+
+    inds = np.argsort(s2flux)
+    sortedcds = coords[np.flip(inds)].copy()
+    sortedmask = mask[np.flip(inds)]
+    for i,cd in enumerate(sortedcds):
+        try:         
+            cut = Cutout2D(imresid, cd, wcs=wcsi,size=8*u.arcsec,copy=True,mode='partial',fill_value=np.nan)
+            peak = peak_local_max(cut.data, num_peaks=1)
+            if len(peak) > 0:
+                yp=peak[0,0]
+                xp=peak[0,1]
+        #         plt.imshow(cut.data)
+        #         plt.colorbar()
+        #         plt.plot(xp,yp,'bo')
+        #         plt.show()
+
+            else:
+                yp,xp = np.unravel_index(np.argmax(cut.data), cut.data.shape)
+
+            xorig,yorig = cut.to_original_position((xp,yp))
+            flux_detected = imresid[yorig,xorig]
+            flux_out = np.append(flux_out, round(flux_detected,6) )
+            snr_out = np.append(snr_out, round(snrresid[yorig,xorig],6) )
+            err_out = np.append(err_out, ns[yorig,xorig])
+
+            ra_i,dec_i = wcsi.wcs_pix2world(xorig,yorig,0) #note reversal of x and y
+            #print(type(ra_i), ra_i)
+            ra  = np.append(ra , round(float(ra_i),8) )
+            dec  = np.append(dec , round(float(dec_i),8) )
+            x = np.append(x, xorig)
+            y = np.append(y,yorig)
+
+            #remove source from image and snr
+            imresid[yorig-r_psf :yorig+r_psf+1, xorig-r_psf :xorig+r_psf+1] -= psf*flux_detected
+            snrresid[yorig-r_psf :yorig+r_psf+1, xorig-r_psf :xorig+r_psf+1] -= psf*flux_detected/ns[yorig-r_psf :yorig+r_psf+1, xorig-r_psf :xorig+r_psf+1]
+        except:
+            flux_out = np.append(flux_out, np.nan )
+            snr_out = np.append(snr_out, np.nan )
+            err_out = np.append(err_out, np.nan)
+            ra  = np.append(ra , np.nan)
+            dec  = np.append(dec , np.nan)
+            x = np.append(x, np.nan)
+            y = np.append(y,np.nan)
+    return flux_out,err_out, snr_out, imresid, snrresid, inds
+
+
+def compute_false_positives(im, ns, wcsi, psf,r=3,r_psf=40):
+    imr=im.copy()
+    n = 0
+    iters=0
+    center=int(psf.shape[0]/2.0)
+    psf=psf[int(center-r_psf) : int(center+r_psf+1), int(center-r_psf) : int(center+r_psf+1)]
+
+    fluxes=[]
+    errs = []
+    ppas = int(np.abs(1/wcsi.pixel_scale_matrix[0,0]/3600))
+    print(ppas)
+    while (n <= 5000) and (iters < 10000):
+#         print(n, iters)
+        x = np.random.randint(61,imr.shape[1]-61)
+        y = np.random.randint(61,imr.shape[0]-61)
+        if imr[y,x] !=0:
+            cut = imr[y-r*ppas:y+r*ppas+1,x-r*ppas:x+r*ppas+1]
+            cuterr = ns[y-r*ppas:y+r*ppas+1,x-r*ppas:x+r*ppas+1]
+            try:
+                peak = peak_local_max(cut, num_peaks=1)
+                if len(peak) > 0:
+                    yp=peak[0,0]
+                    xp=peak[0,1]
+#                     plt.imshow(cut.data)
+#                     plt.colorbar()
+#                     plt.plot(xp,yp,'bo')
+#                     plt.show()
+
+                else:
+                    yp,xp = np.unravel_index(np.argmax(cut), cut.data.shape)
+        
+            except:
+                yp,xp = np.unravel_index(np.argmax(cut), cut.data.shape)
+                print('exception!')
+                
+            flux = cut[yp,xp]
+            err = cuterr[yp,xp]
+            
+            if flux!=0:
+                n+=1
+                fluxes.append(flux)
+                errs.append(err)
+                yorig = y-r*ppas+yp; xorig = x-r*ppas+xp
+#                 plt.imshow(imr)
+#                 plt.plot(xorig,yorig,'ro')
+#                 plt.show()
+#                 print(flux)
+                imr[yorig-r_psf :yorig+r_psf+1, xorig-r_psf :xorig+r_psf+1] -= psf*flux
+#                 plt.imshow(imr[yorig-100:yorig+101,xorig-100:xorig+101])
+#                 plt.show()
+   
+        iters+=1
     
+    return fluxes, errs
+
+
+
+def gen_rand_cds(im, wcsi, otherwcs = None,size=5000):
+    from reproject import reproject_interp
+
+    if otherwcs:
+        im_to_use = reproject_interp((im, wcsi), otherwcs, parallel=12)
+    else: im_to_use = im
+
+    yrange, xrange = im_to_use.shape
+    x = np.random.randint(low=0,high=xrange,size=5000)
+    y = np.random.randint(low=0,high=yrange,size=5000)
+
+    ra, dec = otherwcs.all_pix2world(y,x,origin=(0,0))
+    coords = SC(ra, dec, unit='deg')
+    return coords  

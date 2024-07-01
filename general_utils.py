@@ -12,6 +12,9 @@ from astropy.nddata import Cutout2D
 from astropy.visualization import make_lupton_rgb
 from reproject import reproject_interp,reproject_exact
 
+from scipy.stats import bootstrap
+import scipy.stats as st
+
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=70.0, Om0=0.30) 
 
@@ -91,7 +94,7 @@ def calc_medians(x, y, nbins=30, bins = None):
     """
     if bins is None:
         bins = np.linspace(np.nanmin(x), np.nanmax(x), nbins)
-
+    else: bins = np.asarray(bins)
     bin_space = bins[1:]-bins[0:-1]
     mbins = bins[0:-1] + bin_space/2.
 
@@ -114,3 +117,59 @@ def calc_medians(x, y, nbins=30, bins = None):
             if err is None: bserr.append(np.nan)
             else: bserr.append(err)
     return bins, mbins, medians, lb, ub, bserr
+
+
+def kde2d(x,y,xlim,ylim):
+    xmin,xmax = xlim
+    ymin,ymax = ylim
+    xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
+    positions = np.vstack([xx.ravel(), yy.ravel()])
+    values = np.vstack([x, y])
+    kernel = st.gaussian_kde(values)
+    func = np.reshape(kernel(positions).T, xx.shape)
+    return xx, yy, func
+
+def smooth(x,window_len=11,window='hanning'):
+    """smooth the data using a window with requested size.
+    
+    This method is based on the convolution of a scaled window with the signal.
+    The signal is prepared by introducing reflected copies of the signal 
+    (with the window size) in both ends so that transient parts are minimized
+    in the begining and end part of the output signal.
+    
+    input:
+        x: the input signal 
+        window_len: the dimension of the smoothing window; should be an odd integer
+        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
+            flat window will produce a moving average smoothing.
+
+    output:
+        the smoothed signal
+        
+    example:
+
+    t=linspace(-2,2,0.1)
+    x=sin(t)+randn(len(t))*0.1
+    y=smooth(x)
+    
+    see also: 
+    
+    np.hanning, np.hamming, np.bartlett, np.blackman, np.convolve
+    scipy.signal.lfilter
+ 
+    TODO: the window parameter could be the window itself if an array instead of a string
+    NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
+    """
+
+    if window_len<3:
+        return x
+
+    s=np.r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
+    #print(len(s))
+    if window == 'flat': #moving average
+        w=np.ones(window_len,'d')
+    else:
+        w=eval('np.'+window+'(window_len)')
+
+    y=np.convolve(w/w.sum(),s,mode='valid')
+    return y

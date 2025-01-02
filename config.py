@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib import font_manager
 
 
-def set_plot_defaults()
+def set_plot_defaults():
 	plt.rcParams['text.usetex'] = False
 	plt.rcParams['font.size'] = '14'
 	plt.rcParams["font.family"] = "serif"

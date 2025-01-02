@@ -342,6 +342,15 @@ def get_scuba2_prior(coords, s2_name, im, ns, snr, wcsi, band='850'):
             dec  = np.append(dec , np.nan)
             x = np.append(x, np.nan)
             y = np.append(y,np.nan)
+
+    ### TODO
+    # fluxes = np.zeros(len(coords))
+    # errors = np.zeros(len(coords))
+    # snrs = np.zeros(len(coords))
+    # fluxes[np.flip(inds)] = flux_out
+    # errors[np.flip(inds)] = err_out
+    # snrs[np.flip(inds)] = snr_out
+
     return flux_out,err_out, snr_out, imresid, snrresid, inds
 
 
@@ -400,19 +409,17 @@ def compute_false_positives(im, ns, wcsi, psf,r=3,r_psf=40):
     
     return fluxes, errs
 
-
-
-def gen_rand_cds(im, wcsi, otherwcs = None,size=5000):
+def gen_rand_cds(im, wcsi, otherwcs = None,inputshape=None, size=5000):
     from reproject import reproject_interp
 
     if otherwcs:
-        im_to_use = reproject_interp((im, wcsi), otherwcs, parallel=12)
+        im_to_use,fp = reproject_interp((im, wcsi), otherwcs, shape_out=inputshape, parallel=12)
     else: im_to_use = im
 
     yrange, xrange = im_to_use.shape
-    x = np.random.randint(low=0,high=xrange,size=5000)
-    y = np.random.randint(low=0,high=yrange,size=5000)
+    x = np.random.randint(low=0,high=xrange,size=size)
+    y = np.random.randint(low=0,high=yrange,size=size)
 
-    ra, dec = otherwcs.all_pix2world(y,x,origin=(0,0))
+    ra, dec = otherwcs.all_pix2world(y,x,0)
     coords = SC(ra, dec, unit='deg')
-    return coords  
+    return coords    

@@ -1,0 +1,7 @@
+numpy
+pandas
+matplotlib
+astropy
+reproject
+scipy
+scikit-image

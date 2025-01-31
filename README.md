@@ -1,4 +1,4 @@
-# astro_utils
+# sjmm_util
 
 A collection of useful functions developed to make certain data analysis, plotting, and fitting tasks easier.
 

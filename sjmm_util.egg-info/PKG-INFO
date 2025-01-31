@@ -1,6 +1,6 @@
 Metadata-Version: 2.2
 Name: sjmm_util
-Version: 0.0.3
+Version: 0.0.4
 Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: numpy
@@ -11,7 +11,7 @@ Requires-Dist: reproject
 Requires-Dist: scipy
 Requires-Dist: scikit-image
 
-# astro_utils
+# sjmm_util
 
 A collection of useful functions developed to make certain data analysis, plotting, and fitting tasks easier.
 

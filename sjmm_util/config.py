@@ -3,14 +3,7 @@ from matplotlib import font_manager
 
 
 def set_plot_defaults():
-	# plt.rcParams['text.usetex'] = False
-	# plt.rcParams['font.size'] = '12'
-	# plt.rcParams["font.family"] = "serif"
-	# plt.rcParams["font.serif"] = "Times New Roman"
-	# plt.rcParams['mathtext.fontset'] = 'cm'
-	# plt.rcParams['axes.linewidth'] = 1
-
-	plt.style.use('./sjmdefaults.mplstyle')
+	plt.style.use('sjmm_util.sjmm_util.sjmdefaults')
 
 	for fontpath in font_manager.findSystemFonts(fontpaths=None, fontext='ttf'):
 	    if 'Times'.lower() in fontpath.lower():

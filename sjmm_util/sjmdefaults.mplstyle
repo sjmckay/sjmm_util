@@ -4,3 +4,5 @@ font.family : serif
 font.serif : Times New Roman
 mathtext.fontset : cm
 axes.linewidth : 1
+xtick.direction : in
+ytick.direction : in

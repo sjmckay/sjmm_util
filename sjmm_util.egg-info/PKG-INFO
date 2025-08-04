@@ -1,6 +1,6 @@
-Metadata-Version: 2.2
+Metadata-Version: 2.4
 Name: sjmm_util
-Version: 0.0.4
+Version: 0.1.1
 Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: numpy
@@ -10,6 +10,7 @@ Requires-Dist: astropy
 Requires-Dist: reproject
 Requires-Dist: scipy
 Requires-Dist: scikit-image
+Dynamic: license-file
 
 # sjmm_util
 

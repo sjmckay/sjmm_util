@@ -4,6 +4,7 @@ pyproject.toml
 sjmm_util/__init__.py
 sjmm_util/config.py
 sjmm_util/general_utils.py
+sjmm_util/line_utils.py
 sjmm_util/pipes_utils.py
 sjmm_util/scuba2_utils.py
 sjmm_util.egg-info/PKG-INFO

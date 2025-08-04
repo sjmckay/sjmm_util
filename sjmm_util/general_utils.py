@@ -1,23 +1,16 @@
 import numpy as np
-import matplotlib.pyplot as plt
-
 import astropy.units as u
 from astropy.coordinates import SkyCoord as SC
-from astropy.io import fits
-from astropy import table
 from astropy.table import Table, QTable
 
 from astropy.wcs import wcs
 from astropy.nddata import Cutout2D
-from astropy.visualization import make_lupton_rgb
-from reproject import reproject_interp,reproject_exact
 
 from scipy.stats import bootstrap
 import scipy.stats as st
 
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=70.0, Om0=0.30) 
-
 
 
 def make_regions(coords, name = None, tags=None, r=2, color='green',width=1):
@@ -59,6 +52,34 @@ def make_regions(coords, name = None, tags=None, r=2, color='green',width=1):
     except:
         raise IOError(f'Could not write to file {name}')
 
+def coords_from_3col(tab):
+    """get skycoords from table RAh, RAm, RAs etc columns"""
+    coords = []
+    if 'rah' in tab.colnames:
+        for i in range(len(tab['rah'])):
+            coords.append(SC(str(tab['rah'][i])+'h'+str(tab['ram'][i])+'m'+str(tab['ras'][i])+'s' \
+                           +' '+str(tab['decd'][i])+'d'+str(tab['decm'][i])+'m'+str(tab['decs'][i])+'s',
+                           unit=['hourangle','deg']))
+    else:
+        if 'DE-' in tab.colnames:
+                sgn = np.array(tab['DE-'],dtype=object)
+        else:
+            sgn = []
+            for i in range(len(tab['DEm'])):
+                sgn.append('')
+        for i in range(len(tab['RAh'])):
+            coords.append(SC(str(tab['RAh'][i])+'h'+str(tab['RAm'][i])+'m'+str(tab['RAs'][i])+'s' \
+                       +' '+sgn[i]+str(tab['DEd'][i])+'d'+str(tab['DEm'][i])+'m'+str(tab['DEs'][i])+'s',
+                       unit=['hourangle','deg']))
+    return SC(coords)
+
+def add_ra_dec_cols(tab, coords, index):
+    '''add ra and dec in degrees to table from coords'''
+    ra = [float(c.to_string(precision=6).split(' ')[0]) for c in coords]
+    dec = [float(c.to_string(precision=6).split(' ')[1]) for c in coords]
+    tab.add_column(ra, index = index, name = 'ra')
+    tab.add_column(dec,index = index + 1, name = 'dec')
+    return tab
 
 
 def compute_radial_profile(im):
@@ -82,11 +103,34 @@ def compute_radial_profile(im):
     return radial, improfile
 
 
-def rebin(arr, new_shape):
-    """Rebin 2D array arr to shape new_shape by averaging."""
-    shape = (new_shape[0], arr.shape[0] // new_shape[0],
-             new_shape[1], arr.shape[1] // new_shape[1])
-    return arr.reshape(shape).mean(-1).mean(1)
+def find_map_peak(map, mask=None):
+    '''find peak pixel in a 2D cutout. Returns pixel coords in row, col (y, x) format (i.e., numpy format)'''
+    nmap = map.copy()
+    if mask is not None:
+        nmap[mask] = np.nan
+        if np.all(np.isnan(nmap)):
+            warnings.warn("All nan map for peak finding. Returning center...")
+            return nmap.shape[0]//2, nmap.shape[1]//2
+    return np.unravel_index(np.nanargmax(nmap,),nmap.shape)
+
+def rebin(arr, factor=None,new_len=None,function='mean'):
+    """Rebin 2D array arr to shape new_shape by averaging/summing."""
+    
+    if function =='sum': func = np.sum
+    elif function == 'quad': 
+        func = lambda x, axis: np.sqrt(np.sum(x**2,axis=axis))/x.shape[axis]
+    else: func = np.mean
+    
+    if factor is not None:
+        shape = (len(arr)//factor,factor)   
+        max_index = len(arr)-len(arr)%factor
+        newarr = arr[:max_index].copy()
+        return func(newarr.reshape(shape),axis=-1)
+    if new_len is not None:
+        shape = (new_len,len(arr)//new_len)   
+        max_index = (len(arr)//new_len)*new_len
+        newarr = arr[:max_index].copy()
+        return func(newarr.reshape(shape), axis=-1)
 
 def calc_medians(x, y, nbins=30, bins = None):
     """

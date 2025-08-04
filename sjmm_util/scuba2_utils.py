@@ -1,13 +1,10 @@
 from skimage.feature import peak_local_max
 from scipy.optimize import curve_fit
-from astropy.nddata import Cutout2D
-from matplotlib.patches import Circle
 import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
 from astropy.coordinates import SkyCoord as SC
 from astropy.io import fits
-from astropy import table
 from astropy.table import Table, QTable
 
 from astropy.wcs import wcs

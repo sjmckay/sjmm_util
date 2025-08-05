@@ -10,6 +10,12 @@ from astropy.table import Table, QTable
 from astropy.wcs import wcs
 from astropy.nddata import Cutout2D
 
+"""
+Note: some codes borrowed/adapted from scuba2 package by Li-Yen Hsu.
+These are a work in progress, so will hopefully have some edits soon.
+"""
+
+
 def diff_Gauss(x, c1, sigma1, sigma2):
     """define 1D difference of Gaussian function with scalable parameters"""
     c2 = c1 - 1.0

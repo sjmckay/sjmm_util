@@ -1,7 +1,7 @@
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord as SC
-from astropy.table import Table, QTable
+from astropy.table import Table
 
 from astropy.wcs import wcs
 from astropy.nddata import Cutout2D
@@ -83,6 +83,7 @@ def add_ra_dec_cols(tab, coords, index):
 
 
 def compute_radial_profile(im):
+    """azimuthal averaging to produce a radial profile from 2D data."""
     sz = im.shape[0]
     r = int(sz/2)
     improfile=np.zeros(r+1,float)  
@@ -94,7 +95,7 @@ def compute_radial_profile(im):
         for j in range(sz):
             dist[i,j] = np.sqrt((i-r)**2.0 + (j-r)**2.0) #distance from center to each point
 
-    #average flux in each radius bin (image, model, residual)
+    #average value in each radius bin
     for i in range(r+1):
         filter = (dist >= -0.5+i) & (dist < 0.5+i)
         improfile[i]=np.mean(im[filter]) # compute average profile, binned into increments of [i-0.5, i+0.5]
@@ -134,7 +135,7 @@ def rebin(arr, factor=None,new_len=None,function='mean'):
 
 def calc_medians(x, y, nbins=30, bins = None):
     """
-    Divide the x axis into sections and return groups of y based on its x value
+    Divide the x axis into sections and return groups of y based on its x value.
     """
     if bins is None:
         bins = np.linspace(np.nanmin(x), np.nanmax(x), nbins)
@@ -164,6 +165,7 @@ def calc_medians(x, y, nbins=30, bins = None):
 
 
 def kde2d(x,y,xlim,ylim):
+    """produce a Gaussian kernel density estimation of a given dataset's density distribution."""
     xmin,xmax = xlim
     ymin,ymax = ylim
     xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
@@ -172,48 +174,3 @@ def kde2d(x,y,xlim,ylim):
     kernel = st.gaussian_kde(values)
     func = np.reshape(kernel(positions).T, xx.shape)
     return xx, yy, func
-
-def smooth(x,window_len=11,window='hanning'):
-    """smooth the data using a window with requested size.
-    
-    This method is based on the convolution of a scaled window with the signal.
-    The signal is prepared by introducing reflected copies of the signal 
-    (with the window size) in both ends so that transient parts are minimized
-    in the begining and end part of the output signal.
-    
-    input:
-        x: the input signal 
-        window_len: the dimension of the smoothing window; should be an odd integer
-        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
-            flat window will produce a moving average smoothing.
-
-    output:
-        the smoothed signal
-        
-    example:
-
-    t=linspace(-2,2,0.1)
-    x=sin(t)+randn(len(t))*0.1
-    y=smooth(x)
-    
-    see also: 
-    
-    np.hanning, np.hamming, np.bartlett, np.blackman, np.convolve
-    scipy.signal.lfilter
- 
-    TODO: the window parameter could be the window itself if an array instead of a string
-    NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
-    """
-
-    if window_len<3:
-        return x
-
-    s=np.r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
-    #print(len(s))
-    if window == 'flat': #moving average
-        w=np.ones(window_len,'d')
-    else:
-        w=eval('np.'+window+'(window_len)')
-
-    y=np.convolve(w/w.sum(),s,mode='valid')
-    return y

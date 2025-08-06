@@ -1,4 +1,5 @@
 .venv/
-*__*
+*cache*
+*/*cache*
 *egg*
 */*egg*

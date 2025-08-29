@@ -6,3 +6,4 @@ mathtext.fontset : cm
 axes.linewidth : 1
 xtick.direction : in
 ytick.direction : in
+savefig.dpi : 180

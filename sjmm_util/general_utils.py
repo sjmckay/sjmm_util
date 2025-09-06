@@ -174,3 +174,102 @@ def kde2d(x,y,xlim,ylim):
     kernel = st.gaussian_kde(values)
     func = np.reshape(kernel(positions).T, xx.shape)
     return xx, yy, func
+
+def smooth(x,window_len=11,window='hanning'):
+    """smooth the data using a window with requested size.
+    
+    This method is based on the convolution of a scaled window with the signal.
+    The signal is prepared by introducing reflected copies of the signal 
+    (with the window size) in both ends so that transient parts are minimized
+    in the begining and end part of the output signal.
+    
+    input:
+        x: the input signal 
+        window_len: the dimension of the smoothing window; should be an odd integer
+        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
+            flat window will produce a moving average smoothing.
+
+    output:
+        the smoothed signal
+        
+    example:
+
+    t=linspace(-2,2,0.1)
+    x=sin(t)+randn(len(t))*0.1
+    y=smooth(x)
+    
+    see also: 
+    
+    np.hanning, np.hamming, np.bartlett, np.blackman, np.convolve
+    scipy.signal.lfilter
+ 
+    TODO: the window parameter could be the window itself if an array instead of a string
+    NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
+    """
+
+    if window_len<3:
+        return x
+
+    s=np.r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
+    #print(len(s))
+    if window == 'flat': #moving average
+        w=np.ones(window_len,'d')
+    else:
+        w=eval('np.'+window+'(window_len)')
+
+    y=np.convolve(w/w.sum(),s,mode='valid')
+    return y
+
+
+def coords_from_3col(tab):
+    '''
+    Create SkyCoord array from an Astropy table with separate RA/Dec columns for hours, minutes, etc.
+    
+    Parameters
+    ----------
+    tab (astropy.table.Table or QTable): table with RA/Dec columns with format "RAh", "DEm", etc.
+    
+    Returns
+    coords (astropy.coordinates.SkyCoord): SkyCoord object derived from the table RA and Dec columns.
+    
+    '''
+    coords = []
+    if 'rah' in tab.colnames:
+        for i in range(len(tab['rah'])):
+            coords.append(SC(str(tab['rah'][i])+'h'+str(tab['ram'][i])+'m'+str(tab['ras'][i])+'s' \
+                           +' '+str(tab['decd'][i])+'d'+str(tab['decm'][i])+'m'+str(tab['decs'][i])+'s',
+                           unit=['hourangle','deg']))
+    else:
+        if 'DE-' in tab.colnames:
+                sgn = np.array(tab['DE-'],dtype=object)
+        else:
+            sgn = []
+            for i in range(len(tab['DEm'])):
+                sgn.append('')
+        for i in range(len(tab['RAh'])):
+            coords.append(SC(str(tab['RAh'][i])+'h'+str(tab['RAm'][i])+'m'+str(tab['RAs'][i])+'s' \
+                       +' '+sgn[i]+str(tab['DEd'][i])+'d'+str(tab['DEm'][i])+'m'+str(tab['DEs'][i])+'s',
+                       unit=['hourangle','deg']))
+    return SC(coords)
+
+def add_ra_dec_cols(tab, coords, index):
+    '''
+    Add SkyCoord column to table as single RA and Dec columns
+
+    Parameters
+    ----------
+    tab (astropy.table.Table): table to add RA/Dec columns to
+
+    coords (astropy.coordinates.SkyCoord): SkyCoord object to add to table.
+
+    index (int): intended column index in table.
+
+    Returns
+    -------
+    tab  (astropy.table.Table): the table with coord columns added.
+    '''
+    ra = [float(c.to_string(precision=6).split(' ')[0]) for c in coords]
+    dec = [float(c.to_string(precision=6).split(' ')[1]) for c in coords]
+    tab.add_column(ra, index = index, name = 'ra')
+    tab.add_column(dec,index = index + 1, name = 'dec')
+    return tab

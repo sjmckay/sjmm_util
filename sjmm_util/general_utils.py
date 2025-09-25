@@ -2,10 +2,12 @@ import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord as SC
 from astropy.table import Table
-
-from astropy.wcs import wcs
+from astropy.wcs import WCS
 from astropy.nddata import Cutout2D
 
+from skimage import measure
+
+from scipy import ndimage
 from scipy.stats import bootstrap
 import scipy.stats as st
 
@@ -80,6 +82,59 @@ def add_ra_dec_cols(tab, coords, index):
     tab.add_column(ra, index = index, name = 'ra')
     tab.add_column(dec,index = index + 1, name = 'dec')
     return tab
+
+
+def get_image_footprint(data, wcs_input=None, fill_holes=True):
+    """Get the footprint polygon(s) of valid data in a 2D image.
+
+    Parameters
+    ----------
+    data : 2D numpy.ndarray
+        Image array (NaNs or zeros treated as invalid).
+    wcs_input : astropy.wcs.WCS, optional
+        If provided, footprints are also returned in sky coordinates.
+    fill_holes : bool, default=True
+        If True, fill internal holes so only the outer boundary is kept.
+        If False, returns the outer polygon along with any holes.
+
+    Returns
+    -------
+    footprint_pix : list of (N, 2) numpy.ndarray
+        List of polygon vertices in pixel coordinates (x, y).
+        The first polygon is the outer boundary; subsequent ones (if any) are holes.
+    footprint_world : list of (N, 2) numpy.ndarray or None
+        Same polygons in world coordinates (RA, Dec),
+        or None if no WCS is provided.
+    """
+    # Mask valid pixels
+    mask = np.isfinite(data)&(data!=0)
+    if fill_holes:
+        # Fill holes in data
+        mask = ndimage.binary_fill_holes(mask)
+        contours = measure.find_contours(mask, 0.5)
+        if not contours:
+            return None, None
+        # largest contour
+        contour = max(contours, key=len)
+        footprint_pix = [np.fliplr(contour)]  # ensure (x, y)
+    else:
+        # Keep holes in data
+        contours = measure.find_contours(mask, 0.5)
+        if not contours:
+            return None, None
+        # Sort contours by area (so we return the outer boundary first)
+        areas = [np.abs(np.cross(c[:-1], c[1:]).sum()) for c in contours]
+        idx_sorted = np.argsort(areas)[::-1]
+        footprint_pix = [np.fliplr(contours[i]) for i in idx_sorted]
+
+    #Also return world coordinates if WCS is provided
+    if wcs_input is not None:
+        footprint_world = [wcs_input.all_pix2world(poly, 0) for poly in footprint_pix]
+    else:
+        footprint_world = None
+
+    return footprint_pix, footprint_world
+
 
 
 def compute_radial_profile(im):

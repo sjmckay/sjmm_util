@@ -54,35 +54,6 @@ def make_regions(coords, name = None, tags=None, r=2, color='green',width=1):
     except:
         raise IOError(f'Could not write to file {name}')
 
-def coords_from_3col(tab):
-    """get skycoords from table RAh, RAm, RAs etc columns"""
-    coords = []
-    if 'rah' in tab.colnames:
-        for i in range(len(tab['rah'])):
-            coords.append(SC(str(tab['rah'][i])+'h'+str(tab['ram'][i])+'m'+str(tab['ras'][i])+'s' \
-                           +' '+str(tab['decd'][i])+'d'+str(tab['decm'][i])+'m'+str(tab['decs'][i])+'s',
-                           unit=['hourangle','deg']))
-    else:
-        if 'DE-' in tab.colnames:
-                sgn = np.array(tab['DE-'],dtype=object)
-        else:
-            sgn = []
-            for i in range(len(tab['DEm'])):
-                sgn.append('')
-        for i in range(len(tab['RAh'])):
-            coords.append(SC(str(tab['RAh'][i])+'h'+str(tab['RAm'][i])+'m'+str(tab['RAs'][i])+'s' \
-                       +' '+sgn[i]+str(tab['DEd'][i])+'d'+str(tab['DEm'][i])+'m'+str(tab['DEs'][i])+'s',
-                       unit=['hourangle','deg']))
-    return SC(coords)
-
-def add_ra_dec_cols(tab, coords, index):
-    '''add ra and dec in degrees to table from coords'''
-    ra = [float(c.to_string(precision=6).split(' ')[0]) for c in coords]
-    dec = [float(c.to_string(precision=6).split(' ')[1]) for c in coords]
-    tab.add_column(ra, index = index, name = 'ra')
-    tab.add_column(dec,index = index + 1, name = 'dec')
-    return tab
-
 
 def get_image_footprint(data, wcs_input=None, fill_holes=True):
     """Get the footprint polygon(s) of valid data in a 2D image.

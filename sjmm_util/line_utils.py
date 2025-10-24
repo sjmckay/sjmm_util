@@ -1,14 +1,7 @@
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord as SC
-from astropy.table import Table, QTable
-
-from astropy.wcs import wcs
-from astropy.nddata import Cutout2D
-
-from scipy.stats import bootstrap
-import scipy.stats as st
-
+import astropy.constants as con
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=70.0, Om0=0.30) 
 

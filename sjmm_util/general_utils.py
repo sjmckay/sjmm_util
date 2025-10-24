@@ -170,12 +170,30 @@ def find_map_peak(map, mask=None):
     return np.unravel_index(np.nanargmax(nmap,),nmap.shape)
 
 def rebin(arr, factor=None,new_len=None,function='mean'):
-    """Rebin 2D array arr to shape new_shape by averaging/summing."""
+    """Rebin 2D array arr to shape new_shape by averaging/summing. If the factor by which to rebin does not
+    fit evenly into the old array, extra elements are discarded.
     
-    if function =='sum': func = np.sum
+    Parameters
+    ----------
+    arr (array): array to rebin
+    
+    factor(int or float): optional factor (number of channels) by which to rebin
+    
+    new_len (int): optional new length of array (in case you don't want to input as a factor to downsize by)
+    
+    function (str): either 'mean', 'quad', or 'sum'. If mean or sum, applies those numpy functions. 
+        If quad, sums in quadrature and divides by sqrt(factor) to get reduced error.
+        
+        
+    Returns
+    -------
+    (array): rebinned array with function applied.
+    """
+    
+    if function =='sum': func = np.nansum
     elif function == 'quad': 
-        func = lambda x, axis: np.sqrt(np.sum(x**2,axis=axis))/x.shape[axis]
-    else: func = np.mean
+        func = lambda x, axis: np.sqrt(np.nansum(x**2,axis=axis))/x.shape[axis]
+    else: func = np.nanmean
     
     if factor is not None:
         shape = (len(arr)//factor,factor)   

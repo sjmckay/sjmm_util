@@ -1,9 +1,8 @@
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord as SC
-from astropy.table import Table
-from astropy.wcs import WCS
-from astropy.nddata import Cutout2D
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 
 from skimage import measure
 
@@ -317,3 +316,4 @@ def add_ra_dec_cols(tab, coords, index):
     tab.add_column(ra, index = index, name = 'ra')
     tab.add_column(dec,index = index + 1, name = 'dec')
     return tab
+

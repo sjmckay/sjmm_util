@@ -317,3 +317,14 @@ def add_ra_dec_cols(tab, coords, index):
     tab.add_column(dec,index = index + 1, name = 'dec')
     return tab
 
+def latex_pm(median, p16, p84, decimals):
+    """format median and upper/lower errors for latex table"""
+    upper = p84 - median
+    lower = median - p16
+    
+    fmt = f"{{:.{decimals}f}}"
+    m = fmt.format(median)
+    u = fmt.format(upper)
+    l = fmt.format(lower)
+    
+    return rf"${m}^{{+{u}}}_{{-{l}}}$"

@@ -1,6 +1,5 @@
 import numpy as np
 import astropy.units as u
-from astropy.coordinates import SkyCoord as SC
 import astropy.constants as con
 from astropy.cosmology import FlatLambdaCDM
 cosmo = FlatLambdaCDM(H0=70.0, Om0=0.30) 

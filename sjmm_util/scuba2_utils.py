@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import astropy.units as u
 from astropy.coordinates import SkyCoord as SC
 from astropy.io import fits
-from astropy.table import Table, QTable
+from astropy.table import Table
 
 from astropy.wcs import wcs
 from astropy.nddata import Cutout2D
@@ -16,7 +16,7 @@ These are a work in progress, so will hopefully have some edits soon.
 """
 
 
-def diff_Gauss(x, c1, sigma1, sigma2):
+def diff_gauss(x, c1, sigma1, sigma2):
     """define 1D difference of Gaussian function with scalable parameters"""
     c2 = c1 - 1.0
     return c1 * np.exp(-0.5*x**2/sigma1**2) - c2 * np.exp(-0.5*x**2/sigma2**2)
@@ -123,13 +123,13 @@ def create_psf(name, im, ns, snr, thresh, ns_factor, sz_psf):
 
     print("Fitting PSF to stacked sources...")
     # fit a diff-of-Gaussion model to the radial profile
-    p_best, covar = curve_fit(diff_Gauss, radial, profile, bounds=(0, [10., 15., 15.]))
+    p_best, covar = curve_fit(diff_gauss, radial, profile, bounds=(0, [10., 15., 15.]))
         #note: bounds take lower, upper bounds on fittable paramters (c1, sigma1, sigma2)
 
     # make a plot
     fig = plt.figure()
     plt.scatter(radial,profile)
-    plt.plot(radial, diff_Gauss(radial, *p_best), 'r-')
+    plt.plot(radial, diff_gauss(radial, *p_best), 'r-')
     plt.xlabel('arcsec')
     plt.ylabel('normalized flux')
     plt.grid(True)
@@ -142,7 +142,7 @@ def create_psf(name, im, ns, snr, thresh, ns_factor, sz_psf):
     
     for i in range(sz):
         for j in range(sz):
-            psf[i,j] = diff_Gauss(dist[i,j], *p_best)
+            psf[i,j] = diff_gauss(dist[i,j], *p_best)
     
     return psf
     

@@ -78,6 +78,12 @@ def coords_from_3col(tab):
     return SC(coords)
 
 
+def radec2string(coord):
+    if type(coord) != SC: coord = SC(coord['ra'],coord['dec'],unit='deg')
+    c = coord.to_string('hmsdms')
+    return f"{c.split('h')[0]} {c.split('h')[1].split('m')[0]} {c.split('m')[1].split('s')[0][:6]} {c.split(' ')[1].split('d')[0]} {c.split('d')[1].split('m')[0]} {c.split('d')[1].split('m')[1].split('s')[0][:5]}"
+
+
 def add_ra_dec_cols(tab, coords, index):
     '''
     Add SkyCoord column to table as single RA and Dec columns

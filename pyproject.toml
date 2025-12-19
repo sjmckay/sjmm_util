@@ -20,4 +20,4 @@ dependencies = [
 where = ["."]
 
 [tool.setuptools.package-data]
-sjmm_util = ["sjmdefaults.mplstyle"]
+sjmm_util = ["mydefaults.mplstyle","paper.mplstyle", "talk.mplstyle"]

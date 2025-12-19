@@ -1,0 +1,28 @@
+#basically ggplot with some tweaks
+
+text.usetex : True
+font.size : 12
+font.family : serif
+font.serif : Times
+mathtext.fontset : cm
+xtick.direction : in
+ytick.direction : in
+savefig.dpi : 180
+axes.grid : True
+axes.grid.axis : both
+axes.grid.which : major
+axes.facecolor: E5E5E5
+axes.edgecolor: gray
+axes.linewidth: 1
+axes.titlesize: x-large
+axes.labelsize: large
+axes.labelcolor: gray
+grid.alpha : 1.0
+grid.color : white
+grid.linestyle : -
+grid.linewidth : 0.7
+axes.spines.right : False
+axes.spines.top : False
+axes.prop_cycle: cycler('color', ['348ABD', 'E24A33', '988ED5', '777777', 'FBC15E', '8EBA42', 'FFB5B8'])
+figure.facecolor: white
+figure.edgecolor: 0.50

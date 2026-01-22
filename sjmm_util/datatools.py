@@ -158,10 +158,7 @@ def calc_medians(x, y, nbins=30, bins = None):
     mbins = bins[0:-1] + bin_space/2.
 
     indices = np.digitize(x, bins)
-    medians = []
-    lb = []
-    ub = []
-    bserr= []
+    medians, lb, ub, bserr = [], [], [], []
     for i in range(1,len(bins)):
         if np.sum(indices==i) < 2:
             medians.append(np.nan)

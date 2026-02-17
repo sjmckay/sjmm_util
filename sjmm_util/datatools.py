@@ -149,7 +149,23 @@ def distance_array(map, center):
 
 def calc_medians(x, y, nbins=30, bins = None):
     """
-    Divide the x axis into sections and return groups of y based on its x value.
+    Compute the median of binned y values as a function of x, along with 16th and 84th percentiles and bootstrap error on the median.
+
+    Parameters
+    ----------
+    x (array-like): Independent variable values.
+    y (array-like): Dependent variable values.
+    nbins (int, optional): Number of bins to use if bins are not provided.
+    bins (array-like, optional): Bin edges. If None, bins are computed from the range of x. 
+
+    Returns
+    -------
+    bins (numpy.ndarray): Bin edges used for the calculation.
+    mbins (numpy.ndarray): Bin centers corresponding to the medians.
+    medians (numpy.ndarray): Median of y values in each bin.
+    lb (numpy.ndarray): 16th percentile of y values in each bin.
+    ub (numpy.ndarray): 84th percentile of y values in each bin.
+    bserr (numpy.ndarray): Bootstrap standard error of the median in each bin.
     """
     if bins is None:
         bins = np.linspace(np.nanmin(x), np.nanmax(x), nbins)
@@ -173,6 +189,50 @@ def calc_medians(x, y, nbins=30, bins = None):
             if err is None: bserr.append(np.nan)
             else: bserr.append(err)
     return bins, mbins, medians, lb, ub, bserr
+
+
+def calc_bins(x, y, nbins=30, bins = None, func=np.nanmedian):
+    """
+    Compute a function of binned y values as a function of x, along with 16th and 84th percentiles and bootstrap error on the median.
+    Generalization of calc_medians.
+
+    Parameters
+    ----------
+    x (array-like): Independent variable values.
+    y (array-like): Dependent variable values.
+    nbins (int, optional): Number of bins to use if bins are not provided.
+    bins (array-like, optional): Bin edges. If None, bins are computed from the range of x. 
+    func (callable, optional): Function to apply to y values in each bin. Default is np.nanmedian.
+    
+    Returns
+    -------
+    bins (numpy.ndarray): Bin edges used for the calculation.
+    mbins (numpy.ndarray): Bin centers corresponding to the medians.
+    medians (numpy.ndarray): Median of y values in each bin.
+    lb (numpy.ndarray): 16th percentile of y values in each bin.
+    ub (numpy.ndarray): 84th percentile of y values in each bin.
+    bserr (numpy.ndarray): Bootstrap standard error of the median in each bin.
+    """
+    if bins is None:
+        bins = np.linspace(np.nanmin(x), np.nanmax(x), nbins)
+    else: bins = np.asarray(bins)
+    bin_space = bins[1:]-bins[0:-1]
+    mbins = bins[0:-1] + bin_space/2.
+
+    indices = np.digitize(x, bins)
+    stat, bserr = [], [], 
+    for i in range(1,len(bins)):
+        if np.sum(indices==i) < 2:
+            stat.append(np.nan)
+            lb.append(np.nan)
+            ub.append(np.nan)
+            bserr.append(np.nan)
+        else:
+            stat.append(func(y[indices==i]))
+            err = bootstrap((y[indices==i],),statistic=np.nanmedian, vectorized=True, n_resamples=1000).standard_error
+            if err is None: bserr.append(np.nan)
+            else: bserr.append(err)
+    return bins, mbins, medians, bserr
 
 
 def kde2d(x,y,xlim,ylim):
